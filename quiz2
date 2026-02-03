@@ -1,1 +1,67 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
+contract LocationHasher {
+    // State variable to store the User's Full Name
+    string public fullName = "John Doe"; 
+
+    struct HashResults {
+        string extractedChars;
+        bytes32 hashStandard;
+        bytes32 hashPacked;
+    }
+
+    /**
+     * @dev Processes location strings and returns extracted characters and hashes.
+     */
+    function processLocation(
+        string memory _barangay,
+        string memory _city,
+        string memory _province,
+        string memory _country
+    ) public pure returns (
+        string memory extracted, 
+        bytes32 encodeHash, 
+        bytes32 packedHash
+    ) {
+        // Convert strings to bytes for extraction
+        bytes memory bBarangay = bytes(_barangay);
+        bytes memory bCity = bytes(_city);
+        bytes memory bProvince = bytes(_province);
+        bytes memory bCountry = bytes(_country);
+
+        // Ensure strings have at least 2 characters to avoid out-of-bounds errors
+        require(bBarangay.length >= 2 && bCity.length >= 2 && 
+                bProvince.length >= 2 && bCountry.length >= 2, "Strings too short");
+
+        // Extracting characters
+        bytes memory combined = new bytes(8);
+        
+        // First two of Barangay
+        combined[0] = bBarangay[0];
+        combined[1] = bBarangay[1];
+        
+        // First two of City
+        combined[2] = bCity[0];
+        combined[3] = bCity[1];
+        
+        // Last two of Province
+        combined[4] = bProvince[bProvince.length - 2];
+        combined[5] = bProvince[bProvince.length - 1];
+        
+        // Last two of Country
+        combined[6] = bCountry[bCountry.length - 2];
+        combined[7] = bCountry[bCountry.length - 1];
+
+        extracted = string(combined);
+
+        // Cryptographic Hashing
+        // abi.encode: Includes padding, safer against collisions
+        encodeHash = keccak256(abi.encode(extracted));
+        
+        // abi.encodePacked: Minimalist encoding, gas-efficient
+        packedHash = keccak256(abi.encodePacked(extracted));
+
+        return (extracted, encodeHash, packedHash);
+    }
+}
